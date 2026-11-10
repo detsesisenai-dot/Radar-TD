@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Radar Estratégico de Projetos e Editais</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN (Cloudflare for global & strict firewall stability) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <!-- Chart.js DataLabels Plugin CDN (Cloudflare) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #F5F5F7;
+            --panel-bg: #FFFFFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #515154;
+            --line-color: rgba(0, 0, 0, 0.08);
+            --p0: #0071E3; /* Aprofundar agora */
+            --p1: #248A3D; /* Preparar */
+            --p2: #D97706; /* Monitorar */
+            --p3: #8E8E93; /* Despriorizar */
+        }
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .apple-nav {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--line-color);
+        }
+
+        .apple-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--line-color);
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 6px 20px rgba(0,0,0,0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .apple-card:hover {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            max-height: 250px;
+        }
+
+        .chart-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .chart-card-note {
+            font-size: 11px;
+            color: #6E6E73;
+            background: #F9F9FB;
+            border: 1px solid #EBEBED;
+            border-radius: 10px;
+            padding: 7px 10px;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .heat-table th, .heat-table td {
+            padding: 8px 6px;
+            font-size: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .heat-table th:first-child, .heat-table td:first-child {
+            text-align: left;
+        }
+
+        .seg-btn.active {
+            background-color: #FFFFFF;
+            color: #1D1D1F;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            font-weight: 600;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D1D1D6; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #98989D; }
+        
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .tutorial-icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: #E0F2FE;
+            color: #0284C7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="apple-nav sticky top-0 z-50 w-full">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                </div>
+                <div>
+                    <span class="text-[11px] font-extrabold tracking-wider text-blue-700 uppercase">Inteligência de Mercado</span>
+                    <h1 class="text-base font-bold text-gray-900 leading-tight">Radar Estratégico de Projetos / Editais</h1>
+                </div>
+            </div>
+            
+            <nav class="hidden lg:flex items-center space-x-6 text-sm font-bold text-gray-600">
+                <a href="#radar-view" class="hover:text-blue-600 transition-colors">Radar Interativo</a>
+                <a href="#analytics-view" class="hover:text-blue-600 transition-colors">Portfólio &amp; Gráficos</a>
+                <a href="#editais-view" class="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>Editais Abertos</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </a>
+                <a href="#matrix-view" class="hover:text-blue-600 transition-colors">Plano Completo</a>
+            </nav>
+
+            <button onclick="copiarPlanoTexto()" class="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full shadow-sm transition-colors flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>Copiar Plano</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-10">
+
+        <!-- Executive Onboarding / Tutorial -->
+        <section id="onboarding-panel" class="apple-card p-6 sm:p-8 bg-white border-blue-100 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-bl-full -z-10 opacity-70"></div>
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-gray-900">Bem-vindo ao Radar Estratégico de Projetos / Editais</h2>
+                    <p class="text-base text-gray-600 mt-1 font-medium">Sua plataforma de inteligência para prospecção, editais e novos negócios.</p>
+                </div>
+                <button onclick="document.getElementById('onboarding-panel').style.display='none'" class="text-gray-400 hover:text-gray-700 text-sm font-bold underline">Esconder guia</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div class="tutorial-step">
+                    <div class="tutorial-icon text-lg">1</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900">Explore o Radar</h4>
+                        <p class="text-sm text-gray-600 mt-1 leading-relaxed">As oportunidades orbitam a Mandala Estratégica. Quanto mais ao <strong>centro</strong>, maior o Score Estratégico (Aprofundar Agora). Clique nos pontos para ler a estratégia.</p>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-icon text-lg">2</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900">Filtros Cruzados (Cross-Filter)</h4>
+                        <p class="text-sm text-gray-600 mt-1 leading-relaxed">Clique em qualquer barra dos gráficos, fatias de pizza ou use os botões no topo para filtrar instantaneamente o mapa, a matriz e o radar.</p>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="tutorial-icon text-lg">3</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900">Fomento e Editais</h4>
+                        <p class="text-sm text-gray-600 mt-1 leading-relaxed">Acesse a aba de editais para descobrir onde há subsídios para financiar projetos da TD. Leia os <em>Insights Estratégicos</em> para saber como se posicionar.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-100 text-sm text-gray-500 font-medium">
+                <strong>Critérios de Pontuação:</strong> Tamanho da Oportunidade (25%) + Aderência às Competências Internas (30%) + Potencial Comercial (25%) + Diferenciação (20%).
+            </div>
+        </section>
+
+        <!-- Header / KPI Highlights -->
+        <section class="apple-card p-6 sm:p-8 bg-gradient-to-b from-white to-slate-50/50">
+            <div class="max-w-4xl space-y-3 mb-8">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-extrabold text-blue-800 uppercase tracking-wider">
+                    Edição 01 · Priorização Paramétrica
+                </div>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                    Mapeamento de Oportunidades &amp; Recomendações
+                </h2>
+                <p id="lede-text" class="text-base sm:text-lg text-gray-600 leading-relaxed font-medium">
+                    Carregando inteligência de mercado...
+                </p>
+            </div>
+
+            <!-- Fast KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div onclick="filterByPri(null)" class="p-5 rounded-2xl bg-white border border-gray-200/80 shadow-sm cursor-pointer hover:bg-gray-50 transition-all" id="kpi-card-total">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Selecionado</span>
+                    <span class="text-4xl font-extrabold text-gray-900 block mt-1.5 mb-1" id="kpi-total">41</span>
+                    <span class="text-xs text-gray-500 font-bold">Oportunidades mapeadas</span>
+                </div>
+                <div onclick="filterByPri(0)" class="p-5 rounded-2xl bg-white border border-blue-100 shadow-sm cursor-pointer hover:bg-blue-50/50 transition-all" id="kpi-card-0">
+                    <span class="text-xs font-bold text-blue-700 uppercase tracking-wider">Aprofundar Agora</span>
+                    <span class="text-4xl font-extrabold text-blue-600 block mt-1.5 mb-1" id="kpi-aprof">--</span>
+                    <span class="text-xs text-blue-600/90 font-bold">Score ≥ 78 (Prioridade Imediata)</span>
+                </div>
+                <div onclick="filterByPri(1)" class="p-5 rounded-2xl bg-white border border-emerald-100 shadow-sm cursor-pointer hover:bg-emerald-50/50 transition-all" id="kpi-card-1">
+                    <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Preparar</span>
+                    <span class="text-4xl font-extrabold text-emerald-600 block mt-1.5 mb-1" id="kpi-prep">--</span>
+                    <span class="text-xs text-emerald-600/90 font-bold">Score 65–77 (Parcerias)</span>
+                </div>
+                <div onclick="filterByPri(99)" class="p-5 rounded-2xl bg-white border border-amber-100 shadow-sm cursor-pointer hover:bg-amber-50/50 transition-all" id="kpi-card-99">
+                    <span class="text-xs font-bold text-amber-700 uppercase tracking-wider">Monitorar / Outros</span>
+                    <span class="text-4xl font-extrabold text-amber-600 block mt-1.5 mb-1" id="kpi-monit">--</span>
+                    <span class="text-xs text-amber-600/90 font-bold">Score &lt; 65 (Radar Longo Prazo)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters Toolbelt -->
+        <section class="apple-card p-4 sm:p-6 sticky top-16 z-40 bg-white/95 backdrop-blur-md shadow-sm border-gray-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
+                <!-- Perfil de Atuação (NOVO) -->
+                <div>
+                    <label for="filter-perfil" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Perfil de Atuação:</label>
+                    <select id="filter-perfil" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Todos os Perfis</option>
+                        <option value="Consultoria">Empresa de Consultoria</option>
+                        <option value="ICT">Instituição de C&T (ICT)</option>
+                        <option value="Startup">Startup / AgTech</option>
+                        <option value="Corporacao">Indústria / Corporação</option>
+                    </select>
+                </div>
+                <!-- Estado -->
+                <div>
+                    <label for="filter-uf" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Estado (UF):</label>
+                    <select id="filter-uf" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Todos os Estados</option>
+                    </select>
+                </div>
+                <!-- Setor -->
+                <div>
+                    <label for="filter-setor" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Área Estratégica:</label>
+                    <select id="filter-setor" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Todas as Áreas</option>
+                    </select>
+                </div>
+                <!-- Tipo de Solução -->
+                <div>
+                    <label for="filter-sol" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Tipo de Projeto:</label>
+                    <select id="filter-sol" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Todos os Projetos</option>
+                    </select>
+                </div>
+                <!-- Vigência (Horizonte) -->
+                <div>
+                    <label for="filter-hor" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Vigência (Prazo):</label>
+                    <select id="filter-hor" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Qualquer Vigência</option>
+                    </select>
+                </div>
+                <!-- Segmento -->
+                <div>
+                    <label for="filter-seg" class="block text-xs font-extrabold text-gray-600 mb-1.5 uppercase tracking-wide">Segmento Específico:</label>
+                    <select id="filter-seg" class="w-full text-sm font-bold bg-slate-50 border border-gray-300 text-gray-900 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">Todos os Segmentos</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Segmented Buttons Row -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <!-- Tipo Cliente -->
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl text-sm font-bold" id="seg-cli">
+                        <button data-v="" class="seg-btn active px-3 py-1.5 rounded-lg transition">Todos Clientes</button>
+                        <button data-v="G" class="seg-btn px-3 py-1.5 rounded-lg transition">Governo</button>
+                        <button data-v="I" class="seg-btn px-3 py-1.5 rounded-lg transition">Indústria</button>
+                        <button data-v="C" class="seg-btn px-3 py-1.5 rounded-lg transition">Cooperativa</button>
+                        <button data-v="S" class="seg-btn px-3 py-1.5 rounded-lg transition">Sistema S</button>
+                    </div>
+
+                    <!-- Porte -->
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl text-sm font-bold" id="seg-por">
+                        <button data-v="" class="seg-btn active px-3 py-1.5 rounded-lg transition">Todo Porte</button>
+                        <button data-v="P" class="seg-btn px-3 py-1.5 rounded-lg transition">Pequeno</button>
+                        <button data-v="M" class="seg-btn px-3 py-1.5 rounded-lg transition">Médio</button>
+                        <button data-v="G" class="seg-btn px-3 py-1.5 rounded-lg transition">Grande</button>
+                    </div>
+
+                    <!-- Nacionais Toggle -->
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl text-sm font-bold" id="seg-nac">
+                        <button data-v="1" class="seg-btn active px-3 py-1.5 rounded-lg transition">Com Nacionais</button>
+                        <button data-v="0" class="seg-btn px-3 py-1.5 rounded-lg transition">Apenas Estado</button>
+                    </div>
+                </div>
+
+                <button id="btn-reset" class="text-sm font-bold text-gray-700 hover:text-gray-900 px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 transition w-full xl:w-auto">
+                    Limpar Filtros
+                </button>
+            </div>
+        </section>
+
+        <!-- RADAR & DETAILED INSPECTION DRAWER -->
+        <section id="radar-view" class="apple-card p-6 flex flex-col items-center justify-between min-h-[560px] relative overflow-hidden">
+            <!-- Header -->
+            <div class="w-full flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Mandala Estratégica de Projetos</h3>
+                    <p class="text-xs text-gray-500">Mais próximo ao centro = Maior urgência comercial. Clique nas fatias para filtrar o setor.</p>
+                </div>
+                <div class="flex items-center space-x-2 text-[10px] font-bold">
+                    <span class="flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-full border border-blue-200">
+                        <span class="w-2 h-2 rounded-full bg-blue-600"></span> Aprofundar (Centro)
+                    </span>
+                    <span class="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Preparar (Meio)
+                    </span>
+                </div>
+            </div>
+
+            <!-- DOM & SVG Radar Visual -->
+            <div id="radar-container" class="relative w-full max-w-[500px] aspect-square my-4 rounded-full flex-shrink-0">
+                <!-- Rendered by JS -->
+            </div>
+        </section>
+
+        <!-- ANALYTICAL DASHBOARDS -->
+        <section id="analytics-view" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                    <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-bold text-blue-800 mb-1">
+                        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                        <span>Gráficos Interativos Cruzados (Cross-Filter)</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">Análise de Portfólio &amp; Priorização</h3>
+                    <p class="text-xs text-gray-500">Clique em qualquer barra ou fatia para filtrar instantaneamente todo o painel, radar e editais.</p>
+                </div>
+                <button id="btn-clear-chart-filters" onclick="clearChartFilter()" class="hidden text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1 rounded-full transition flex items-center gap-1.5 self-start sm:self-auto">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span>Limpar Filtro de Gráfico (<span id="active-chart-filter-label"></span>)</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Chart 1: Priority Distribution -->
+                <div class="apple-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900">Distribuição por Faixa</h4>
+                                <p class="text-xs text-gray-500">Volume por estágio de prioridade</p>
+                            </div>
+                            <span class="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Interativo</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartPriority"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card-note">
+                        <strong>Nota de Leitura:</strong> Clique em uma fatia para isolar apenas as frentes daquela urgência. As notas ≥78 demandam ação imediata no próximo trimestre comercial.
+                    </div>
+                </div>
+
+                <!-- Chart 2: Top Sectors -->
+                <div class="apple-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900">Score Médio por Setor</h4>
+                                <p class="text-xs text-gray-500">Atratividade estratégica ponderada</p>
+                            </div>
+                            <span class="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Interativo</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartSectors"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card-note">
+                        <strong>Nota de Leitura:</strong> Médias calculadas pelos critérios ponderados TD (0–100). Clique em uma barra vertical para filtrar todas as recomendações daquele setor.
+                    </div>
+                </div>
+
+                <!-- Chart 3: Client Type vs Urgency -->
+                <div class="apple-card p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="chart-card-header">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900">Demanda por Tipo de Cliente</h4>
+                                <p class="text-xs text-gray-500">Governo, Indústria, Cooperativa e S</p>
+                            </div>
+                            <span class="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Interativo</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartClients"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card-note">
+                        <strong>Nota de Leitura:</strong> Mede a densidade de compradores potenciais. Clique em uma barra para isolar o público-alvo (ex: frentes municipais de Governo ou Indústria).
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STATE TILES & CROSS MATRIX -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- Interactive Map Density -->
+            <div class="lg:col-span-5 apple-card p-5 flex flex-col items-center">
+                <div class="w-full flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-bold text-gray-900">Mapa de Densidade Estratégica</h4>
+                    <span class="text-[10px] text-gray-500 font-medium">Frentes Prioritárias</span>
+                </div>
+                <p class="text-xs text-gray-500 w-full text-left mb-4">Clique na bolha do estado para filtrar todo o radar.</p>
+                
+                <!-- Doodle Map Container (Restored original image with adjusted filters) -->
+                <div class="relative w-full flex-grow flex items-center justify-center min-h-[350px] mt-2">
+                    <div id="brazil-map-container" class="relative w-full max-w-[320px] aspect-[9/10] drop-shadow-sm" style="background-image: url('https://i.postimg.cc/B6zNdnZ9/doodle-freehand-drawing-of-brazil-map-free-png.webp'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: grayscale(100%) opacity(0.7) contrast(1.1);">
+                        <!-- Map Bubbles injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap / Cross Tables -->
+            <div class="lg:col-span-7 apple-card p-5 overflow-hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-bold text-gray-900">Cruzamento: Setor × Prioridade</h4>
+                    <span class="text-[10px] bg-slate-100 text-gray-700 px-2 py-0.5 rounded font-semibold">Tabela Matricial</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full heat-table" id="heat-setor-table">
+                        <!-- Injected by JS -->
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- OPEN CALLS / EDITAIS VIGENTES -->
+        <section id="editais-view" class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                    <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-800 mb-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                        <span>Fomento Público para Consultoria</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900">Editais e Chamadas Públicas</h3>
+                    <p class="text-xs text-gray-500">Mapeamento de recursos a fundo perdido para subsidiar projetos da TD em clientes públicos e privados</p>
+                </div>
+                <span class="text-xs text-gray-500 font-semibold" id="editais-badge-count">Atualizando chamadas...</span>
+            </div>
+
+            <!-- Insights Estratégicos -->
+            <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 mb-4">
+                <h4 class="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4z"></path></svg>
+                    Insights Estratégicos de Fomento e Captação
+                </h4>
+                <ul class="text-xs text-blue-800 space-y-2 list-disc list-inside">
+                    <li><strong>Curto Prazo:</strong> A linha do <em>Sebraetec</em> é a mais direta para Goiás, gerando receita contratada por demanda do cliente (Sebrae subsidia ~70%).</li>
+                    <li><strong>Grandes Chamadas (Finep, BNDES):</strong> Exigem empresas com patrimônio líquido positivo e, frequentemente, arranjos em rede (ex: empresa âncora > R$16 mi + ICT como UFG/Senai). <strong>A atuação deve ocorrer estrategicamente como co-executora ou parceira de PMO de Inovação</strong>.</li>
+                    <li><strong>Setor Público:</strong> Para BNDES Estruturação, o caminho é abordar diretamente o ente municipal, já que não há editais passivos abertos para municípios menores.</li>
+                </ul>
+            </div>
+
+            <h4 class="text-sm font-bold text-gray-800 mt-6 border-b pb-2">Chamadas Abertas / Fluxo Contínuo</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4" id="editais-container">
+                <!-- Injected via JavaScript -->
+            </div>
+
+            <h4 class="text-sm font-bold text-gray-800 mt-8 border-b pb-2">Chamadas Encerradas (Preparação de Consórcios p/ Próxima Rodada)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="editais-encerrados-container">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- COMPLETE REVENUE PLAN (ORDERED BY PRIORITY) -->
+        <section id="matrix-view" class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">Plano Executivo de Recomendações</h3>
+                    <p class="text-xs text-gray-500">Ações agrupadas por urgência com especificações completas de abordagem comercial</p>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <input type="text" id="search-input" placeholder="Buscar por palavra-chave, tema ou oferta..." class="w-full text-xs bg-white border border-gray-300 rounded-xl px-3.5 py-2 pl-9 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+
+            <div class="space-y-6" id="plano-container">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Slide-over Drawer -->
+    <div id="slide-backdrop" class="fixed inset-0 bg-gray-900/30 backdrop-blur-sm z-[90] hidden transition-opacity opacity-0 duration-300" onclick="closeDrawer()"></div>
+    
+    <div id="slide-panel" class="fixed inset-y-0 right-0 z-[100] w-full max-w-lg bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50/80 backdrop-blur sticky top-0 z-10">
+            <h3 class="text-base font-extrabold text-gray-900 uppercase tracking-wide">Inspeção Estratégica</h3>
+            <button onclick="closeDrawer()" class="p-2 rounded-full hover:bg-gray-200 text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6" id="detail-drawer">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-3" id="detail-badges">
+                        <span class="text-xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200" id="det-uf">GO</span>
+                        <span class="text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-gray-100 text-gray-700" id="det-setor">Setor Público</span>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700" id="det-horizonte">0–6 meses</span>
+                        <span class="text-[10px] font-extrabold uppercase px-2.5 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200" id="det-perfil">Consultoria</span>
+                    </div>
+                    <h4 class="text-2xl font-extrabold text-gray-900 leading-snug" id="det-titulo">Título da Oportunidade</h4>
+                </div>
+                <div class="text-right pl-4 shrink-0">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Score Estratégico</span>
+                    <div class="w-16 h-16 rounded-2xl bg-blue-600 text-white flex flex-col items-center justify-center font-extrabold shadow-md" id="det-score-box">
+                        <span class="text-2xl leading-none" id="det-score-val">86</span>
+                        <span class="text-[10px] font-extrabold opacity-90 mt-1 uppercase tracking-widest">Nota</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategic Offer Box -->
+            <div class="p-5 rounded-2xl bg-slate-50 border border-gray-200/80">
+                <span class="text-xs uppercase font-extrabold text-gray-500 tracking-wider block mb-2">Proposta de Atuação</span>
+                <p class="text-base text-gray-900 font-medium leading-relaxed" id="det-oferta">Descrição detalhada do pacote de consultoria ou produto...</p>
+            </div>
+
+            <!-- Context & Why Now -->
+            <div class="space-y-4 text-sm">
+                <div>
+                    <span class="font-extrabold text-gray-900 block mb-1 text-base">Por que agora:</span>
+                    <p class="text-gray-700 leading-relaxed text-base" id="det-porque">Evidência regulatória ou de mercado...</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/60 text-emerald-900 shadow-sm">
+                    <span class="font-extrabold block text-xs mb-1.5 uppercase tracking-wide">Próximo Passo Recomendado:</span>
+                    <p class="text-base leading-relaxed font-semibold" id="det-passo">Ação comercial executável.</p>
+                </div>
+            </div>
+
+            <!-- Criteria Bars (1 to 5) -->
+            <div class="pt-5 border-t border-gray-100">
+                <span class="text-xs uppercase font-extrabold text-gray-500 tracking-wider block mb-3">Composição dos Critérios de Score</span>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                        <span class="text-gray-500 font-bold block text-xs mb-0.5">Tamanho (25%)</span>
+                        <span class="font-extrabold text-gray-900 text-lg" id="det-crit-t">4 / 5</span>
+                    </div>
+                    <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                        <span class="text-gray-500 font-bold block text-xs mb-0.5">Aderência Int. (30%)</span>
+                        <span class="font-extrabold text-gray-900 text-lg" id="det-crit-a">5 / 5</span>
+                    </div>
+                    <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                        <span class="text-gray-500 font-bold block text-xs mb-0.5">Potencial Com. (25%)</span>
+                        <span class="font-extrabold text-gray-900 text-lg" id="det-crit-p">4 / 5</span>
+                    </div>
+                    <div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                        <span class="text-gray-500 font-bold block text-xs mb-0.5">Diferenciação (20%)</span>
+                        <span class="font-extrabold text-gray-900 text-lg" id="det-crit-d">4 / 5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source & Proof -->
+            <div class="pt-5 pb-8 border-t border-gray-100 flex items-center justify-between text-sm">
+                <span class="text-gray-600 font-bold text-xs uppercase tracking-wide">Fonte Estratégica:</span>
+                <a id="det-link" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-extrabold underline flex items-center gap-1 text-base">
+                    <span id="det-fonte">Acessar Documento</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Footer -->
+    <footer class="border-t border-gray-200 bg-white py-10 text-center text-xs text-gray-500 mt-16">
+        <div class="max-w-7xl mx-auto px-4 space-y-2">
+            <p class="font-bold text-gray-800 uppercase tracking-wide">Radar Estratégico de Projetos / Editais</p>
+            <p>Score Paramétrico = Tamanho (25%) + Aderência (30%) + Potencial Comercial (25%) + Diferenciação (20%)</p>
+            <p class="text-[11px] text-gray-400">Design Executivo Clean · Plataforma Interativa de Negócios</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg opacity-0 transition-opacity pointer-events-none">
+        Plano copiado com sucesso!
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC ENGINE -->
+    <script>
+        // --- DATASET & CONSTANTS ---
+        const PESOS = { T: 25, A: 30, P: 25, D: 20 };
+        const FAIXAS = [
+            [78, 'Aprofundar agora', '#0071E3'],
+            [65, 'Preparar', '#248A3D'],
+            [50, 'Monitorar', '#D97706'],
+            [0, 'Despriorizar', '#8E8E93']
+        ];
+
+        const UF_NAMES = {
+            AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',
+            GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',
+            PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',
+            RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins',BR:'Nacional'
+        };
+
+        const CLIENTES = { G: 'Governo', I: 'Indústria', C: 'Cooperativa', S: 'Sistema S' };
+        const PORTES = { P: 'Pequeno', M: 'Médio', G: 'Grande' };
+        const SOLUCOES = {
+            D: 'Diagnóstico', E: 'Estratégia e planejamento', I: 'Implantação e PMO',
+            N: 'Governança e conformidade', F: 'Estruturação de projetos e fomento',
+            C: 'Capacitação', R: 'Solução recorrente'
+        };
+
+        const MAP_COORDS = {
+            AC: { top: 48, left: 12 }, AM: { top: 30, left: 30 }, RR: { top: 10, left: 35 },
+            RO: { top: 55, left: 28 }, PA: { top: 28, left: 50 }, AP: { top: 12, left: 58 },
+            TO: { top: 43, left: 60 }, MA: { top: 26, left: 68 }, PI: { top: 35, left: 74 },
+            CE: { top: 27, left: 83 }, RN: { top: 32, left: 90 }, PB: { top: 37, left: 90 },
+            PE: { top: 41, left: 88 }, AL: { top: 45, left: 88 }, SE: { top: 49, left: 86 },
+            BA: { top: 55, left: 76 }, MT: { top: 55, left: 45 }, GO: { top: 61, left: 58 },
+            DF: { top: 59, left: 62 }, MS: { top: 73, left: 48 }, MG: { top: 68, left: 72 },
+            ES: { top: 68, left: 82 }, RJ: { top: 76, left: 78 }, SP: { top: 76, left: 65 },
+            PR: { top: 82, left: 58 }, SC: { top: 88, left: 62 }, RS: { top: 95, left: 58 }
+        };
+
+        const R = (id,ufs,setor,seg,pub,hor,T,A,P,D,titulo,oferta,porque,passo,fonte,url) => 
+            ({ id,ufs,setor,seg,pub,hor,T,A,P,D,titulo,oferta,porque,passo,fonte,url });
+
+        const RECS = [
+            R(1,'BR','Setor público','Gestão tributária municipal','Público','0–6 meses',4,5,4,4,'Municípios prontos para o IBS','Kit Município IBS-Ready: diagnóstico de receita, plano de recuperação de ISS, comitê municipal da reforma e capacitação de servidores.','A partilha do IBS usa a média de ISS e ICMS de 2019 a 2026, o que torna 2026 o último ano para fortalecer a base municipal.','Priorizar 20 municípios goianos por dependência de ISS e abordar via associações municipais.','TCE-MT','https://www.tce.mt.gov.br/conteudo/download/id/145579'),
+            R(2,'BR','Empresas','Transição tributária','Privado','0–6 meses',5,4,5,2,'Transição IBS/CBS para empresas','Programa Transição Tributária 360: impacto em margem e caixa, redesenho de processos e PMO da adequação de sistemas.','2026 e 2027 são o período mais crítico, com apuração e declaração nos dois sistemas ao mesmo tempo.','Empacotar a oferta e testá-la com 5 clientes da carteira em 30 dias.','Senior','https://www.senior.com.br/blog/reforma-tributaria-em-2026'),
+            R(3,'BR','Setor público','IA no governo','Público','6–18 meses',4,5,3,4,'IA aplicada a serviços públicos','Laboratório de IA para Governo: casos de uso, provas de conceito, governança de dados e formação de servidores.','O plano federal de IA reserva R$ 1,76 bi para melhorar serviços públicos.','Mapear 3 casos replicáveis (atendimento, fiscalização, saúde) e montar uma demonstração.','Convergência Digital','https://convergenciadigital.com.br/?p=32282'),
+            R(4,'BR','Tecnologia digital','Governança de IA','Ambos','6–18 meses',4,4,4,4,'Governança e conformidade de IA','AI Governance Sprint: inventário de usos, política de IA, matriz de risco e indicadores de retorno.','Só 7% a 8% das empresas têm maturidade efetiva em governança de agentes de IA.','Lançar diagnóstico gratuito de maturidade como porta de entrada.','Startupi','https://startupi.com.br/transformacao-corporativa-no-brasil-em-2026/'),
+            R(5,'BR','Tecnologia digital','Agentes de IA','Privado','0–6 meses',4,4,4,3,'Agentes de IA para médias empresas','IA operacional por assinatura: agentes em processos-chave com acompanhamento mensal de resultados.','O gasto global com IA deve passar de US$ 2,5 tri em 2026, mas médias empresas não têm quem implante e conduza a mudança.','Escolher 2 processos-padrão e rodar piloto com um cliente âncora.','Startupi','https://startupi.com.br/transformacao-corporativa-no-brasil-em-2026/'),
+            R(6,'BR','Infraestrutura','PPPs e concessões','Público','6–18 meses',5,3,4,3,'Pré-viabilidade de PPPs municipais','Fábrica de pré-viabilidade: estudos de demanda, modelagem econômico-financeira e apoio a PMIs.','Há 274 projetos de PPP e concessão em preparação, e 58% dos mais prováveis são municipais.','Fechar parceria jurídica e de engenharia e mapear PMIs abertas no Centro-Oeste.','Exame / Radar PPP','https://exame.com/brasil/infraestrutura/apos-eleicoes-brasil-tem-274-projetos-de-ppps-e-concessoes-a-caminho-de-leiloes/'),
+            R(7,'BR','Tecnologia digital','Cibersegurança','Ambos','6–18 meses',4,3,4,3,'Ciber-resiliência e gestão de risco','Diagnóstico de ciber-maturidade e plano de resiliência, com parceiros para a operação técnica.','O mercado brasileiro deve chegar a US$ 4,05 bi em 2026, e o governo está entre os setores mais atacados.','Fechar 1–2 parcerias técnicas e lançar diagnóstico para prefeituras.','Viva / Broadcast','https://viva.com.br/tecnologia/mercado-de-ciberseguranca-no-brasil-deve-crescer-10-ao-ano-diz-consultoria.html'),
+            R(8,'BR','Empresas','Fomento à inovação','Privado','6–18 meses',4,3,3,3,'Captação de fomento para IA e inovação','Estruturação de projetos para editais e crédito da Finep, do BNDES e do FNDCT.','O eixo de inovação empresarial do plano federal de IA soma R$ 13,79 bi.','Montar esteira de qualificação de clientes e monitorar editais.','Diário do Comércio','https://diariodocomercio.com.br/tecnologia/plano-inteligencia-artificial-governo-lula/'),
+            R(9,'MT,GO,MS,PA,RO,TO,MG,ES,BA','Agro & bioeconomia','Rastreabilidade','Privado','0–6 meses',4,2,4,3,'Conformidade com a EUDR','Diagnóstico EUDR e implantação de rastreabilidade com parceiro de geoinformação.','A regra europeia vale a partir de 30/12/2026 para médias e grandes empresas e alcança soja, carne e café.','Avaliar parceria com plataforma de rastreabilidade e abordar cooperativas e frigoríficos.','Compre Rural','https://comprerural.com/nova-regra-da-europa-entra-em-vigor-em-dezembro-e-muda-exigencias-para-soja-cafe-e-gado-do-brasil/'),
+            R(10,'BR','Indústria','Mercado de carbono','Privado','18–36 meses',3,2,3,3,'Prontidão para o mercado regulado de carbono','Inventário, plano de monitoramento e governança de emissões para indústrias acima do limiar.','A consulta do cronograma de monitoramento terminou em agosto de 2026 e prevê os primeiros setores em 2027.','Acompanhar a regulamentação e mapear quais setores entram primeiro.','Global Suite Solutions','https://www.globalsuitesolutions.com/pt/?p=117765'),
+            R(11,'CE,RS,RJ,SP,GO','Tecnologia digital','Data centers','Público','18–36 meses',3,2,2,3,'Atração de data centers','Estudo de atratividade e plano de atração de investimentos digitais para governos.','A Lei 15.504/2026 (Redata) criou incentivos para data centers, e os estados disputam esses projetos.','Sondar a secretaria estadual de desenvolvimento sobre a estratégia de cada estado.','Startups.com.br','https://startups.com.br/negocios/lula-sanciona-redata-e-cria-regime-fiscal-para-data-centers-no-brasil/'),
+            R(12,'BR','Empresas','Reporte de sustentabilidade','Privado','18–36 meses',2,3,2,2,'Reporte de sustentabilidade (ISSB)','Nicho: apoio a bancos e cooperativas de crédito no reporte e na asseguração.','A CVM tornou o relatório IFRS S1/S2 voluntário para companhias abertas em 2026.','Não priorizar agora e reavaliar na próxima edição.','Mayer Brown / JD Supra','https://www.jdsupra.com/legalnews/cvm-torna-facultativa-a-divulgacao-de-6644010/'),
+            R(13,'RS','Setor público','Adaptação climática','Público','0–6 meses',4,5,4,4,'Resiliência climática nos municípios gaúchos','Planos municipais de adaptação, revisão de planos diretores e gestão da carteira de obras.','O fundo do Plano Rio Grande assegura mais de R$ 14 bi em obras até 2027.','Abordar a Secretaria da Reconstrução e as associações de municípios com oferta de PMO de adaptação.','Governo do RS','https://estado.rs.gov.br'),
+            R(14,'GO','Tecnologia digital','IA aplicada','Ambos','0–6 meses',3,5,4,4,'Parceria com o Distrito de IA de Goiânia','Ofertas conjuntas com o ecossistema do Ceia-UFG para IA aplicada a governo e agro.','O distrito de 91 hectares prevê mais de R$ 300 mi e cerca de 1,4 mil empregos.','Propor ao Ceia-UFG e à Secti um piloto conjunto em um município goiano.','Governo de Goiás','https://goias.gov.br'),
+            R(15,'GO','Infraestrutura','Saneamento','Público','0–6 meses',4,4,4,4,'Gestão municipal da PPP de esgoto','Apoio a municípios na regulação, fiscalização e gestão do contrato da PPP da Saneago.','A concessão cobre 216 municípios goianos e soma R$ 6,3 bi em investimentos.','Montar oferta para consórcios de municípios dos três blocos.','Agência iNFRA','https://agenciainfra.com'),
+            R(16,'GO','Mineração','Terras raras','Ambos','6–18 meses',3,3,3,4,'Desenvolvimento local no norte goiano','Programa de fornecedores locais e governança socioambiental em Minaçu.','A Serra Verde mira cerca de 6.400 t/ano de óxidos até 2027.','Mapear prefeituras e fornecedores do entorno e sondar a empresa.','Jornal Opção','https://www.jornalopcao.com.br'),
+            R(17,'MS','Setor público','Desenvolvimento regional','Público','6–18 meses',3,4,4,4,'Municípios do Vale da Celulose','Planejamento urbano e de serviços públicos para municípios pequenos que recebem megafábricas.','A Arauco ergue em Inocência uma fábrica de US$ 4,6 bi com operação prevista para 2027.','Abordar Inocência e municípios vizinhos com diagnóstico de impacto em serviços.','Compre Rural','https://www.comprerural.com'),
+            R(18,'MT,MS,GO','Agro & bioeconomia','Bioenergia','Ambos','6–18 meses',3,3,3,3,'Polos do etanol de milho','Planejamento de polos agroindustriais e de serviços para municípios que recebem usinas.','Mato Grosso deve produzir 8,44 bi de litros de etanol em 2026/27 e responde por 62% do total de cereais.','Acompanhar novas usinas e oferecer estudos de impacto a prefeituras.','Canal Rural','https://www.canalrural.com.br'),
+            R(19,'BA','Indústria','Automotiva e eletrificação','Ambos','6–18 meses',4,3,3,3,'Fornecedores locais para a BYD','Programa de desenvolvimento de fornecedores e qualificação técnica no entorno de Camaçari.','A BYD passou de 100 mil veículos e mira dobrar capacidade fabril.','Propor programa a Sebrae, Fieb e governo estadual.','Exame','https://exame.com'),
+            R(20,'CE','Tecnologia digital','Data centers','Ambos','6–18 meses',3,3,3,4,'Licença social de megaprojetos digitais','Avaliação de impacto, diálogo com comunidades e governança de grandes projetos.','Mega data centers demandam governança hídrica e diálogo comunitário forte.','Oferecer ao Complexo do Pecém e ao estado um modelo de governança socioambiental.','Acessa','https://www.acessa.com'),
+            R(21,'CE,MA','Energia','Hidrogênio verde','Ambos','18–36 meses',3,2,2,3,'Hidrogênio verde','Monitorar: estudos e capacitação só depois das decisões finais de investimento.','Grandes projetos no Pecém e Itaqui avançam para fase decisória de aportes.','Rever na próxima edição.','Diário do Nordeste','https://diariodonordeste.verdesmares.com.br'),
+            R(22,'CE,RN,BA,PI,PE,PB,AL','Energia','Renováveis e armazenamento','Privado','6–18 meses',3,2,3,3,'Renováveis sob cortes de geração','Estudos de viabilidade de armazenamento (baterias) e revisão de modelos de negócio.','O Nordeste respondeu por mais de 80% do curtailment elétrico nacional.','Monitorar leilão de baterias e modelagens comerciais.','Movimento Econômico','https://movimentoeconomico.com.br'),
+            R(23,'AP,PA,MA','Setor público','Royalties e desenvolvimento','Público','6–18 meses',4,4,3,5,'Municípios da Margem Equatorial','Planejamento de royalties, infraestrutura e capacitação antes do ciclo de produção de óleo.','Petrobras avançou em perfurações exploratórias no litoral do Amapá.','Abordar governo do Amapá e municípios costeiros com plano preparatório.','Portal Amazônia','https://portalamazonia.com'),
+            R(24,'SE,AL','Energia','Óleo e gás','Ambos','6–18 meses',4,4,4,4,'Adensamento da cadeia do gás em Sergipe','Plano de cadeia de fornecedores, atração industrial e qualificação para o projeto SEAP.','Investimentos de grande escala em Sergipe Águas Profundas abrem frente fabril.','Propor ao governo estadual plano de industrialização do gás.','Movimento Econômico','https://movimentoeconomico.com.br'),
+            R(25,'MG','Mineração','Lítio','Ambos','6–18 meses',3,4,3,3,'Desenvolvimento regional no Vale do Lítio','Governança socioambiental e planos de desenvolvimento para municípios do Jequitinhonha.','Produção de concentrado de lítio cresce rápido no semiárido mineiro.','Abordar consórcios municipais e o governo de Minas Gerais.','Acessa','https://www.acessa.com'),
+            R(26,'MG,SC','Mineração','Minerais críticos','Privado','18–36 meses',2,3,3,4,'Cadeia nacional de superímãs','Estruturação de projetos de fomento para empresas da cadeia MagBras.','Laboratórios-fábricas miram produção seriada de ímãs no Brasil.','Mapear empresas do consórcio e editais de fomento.','FAPESP','https://revistapesquisa.fapesp.br'),
+            R(27,'PA','Agro & bioeconomia','Sociobiodiversidade','Ambos','6–18 meses',4,4,3,4,'Bioeconomia no Pará','Estruturação de cadeias, fundos e projetos com governo, cooperativas e Parque de Bioeconomia.','Plano Estadual de Bioeconomia (PlanBio) impulsiona editais socioambientais.','Propor portfólio de projetos para fundos climáticos.','Diário do Pará','https://diariodopara.com.br'),
+            R(28,'AM','Indústria','Incentivos regionais','Privado','0–6 meses',4,3,4,3,'Cadeias com a Zona Franca','Planejamento tributário e de cadeias entre Manaus e outros estados com créditos de IBS/CBS.','Polo Industrial faturou alto e precisa se adaptar à nova tributação.','Abordar indústrias com fornecedores ou compradores na ZFM.','UAI','https://www.uai.com.br'),
+            R(29,'AC,RO','Agro & bioeconomia','Comércio exterior','Ambos','6–18 meses',2,4,3,4,'Corredor do Pacífico','Inteligência comercial e logística para exportadores rumo a Peru e Bolívia.','Exportações recordes pelo corredor rodoviário bioceânico.','Propor estudo de mercado a órgãos de fomento regionais.','Agrolink','https://www.agrolink.com.br'),
+            R(30,'RR','Energia','Transição energética','Público','18–36 meses',2,3,2,4,'Roraima depois da interligação','Planejamento da transição energética e de novos usos produtivos da energia no sistema interligado.','Conexão de Roraima ao Sistema Interligado Nacional (SIN) reorganiza tarifas.','Monitorar demanda governamental estadual.','Poder360','https://www.poder360.com.br'),
+            R(31,'MA','Indústria','Espacial','Público','18–36 meses',2,3,2,4,'Entorno de Alcântara','Plano de desenvolvimento local e de fornecedores para o centro de lançamentos espaciais.','Contratos internacionais de uso da base de Alcântara entram em fase operacional.','Monitorar primeiros lançamentos comerciais.','Estadão','https://www.acessa.com'),
+            R(32,'TO','Agro & bioeconomia','Logística do Matopiba','Público','6–18 meses',3,4,3,3,'Polos logísticos do Tocantins','Planejamento de polos logísticos e de serviços em municípios da Ferrovia Norte-Sul.','Tocantins lidera projeções de crescimento econômico no Matopiba.','Abordar prefeituras com terminais multimodais.','Portal Tela','https://www.portaltela.com'),
+            R(33,'RO,MT','Infraestrutura','Concessões rodoviárias','Público','6–18 meses',2,3,3,3,'Municípios da Rota Agro Central','Apoio a municípios lindeiros na interface e contrapartidas com a concessão.','Concessão rodoviária estratégica em leilão.','Sondar municípios no traçado rodoviário.','Poder360','https://www.poder360.com.br'),
+            R(34,'ES','Indústria','Siderurgia verde','Privado','18–36 meses',3,3,3,3,'Fornecedores da siderurgia verde','Inventário e plano de descarbonização para fornecedores industriais capixabas.','Primeiras usinas de briquete descarbonizado em escala global.','Abordar federação de indústrias com programas para fornecedores.','A Gazeta','https://www.agazeta.com.br'),
+            R(35,'AL','Setor público','Reconversão econômica','Público','6–18 meses',3,4,3,4,'Reconversão de Maceió','Plano de reconversão econômica e gestão da carteira de obras financiada por indenizações.','Necessidade de reestruturar áreas impactadas pela mineração urbana.','Propor plano integrado de reconversão urbana e de serviços.','Movimento Econômico','https://movimentoeconomico.com.br'),
+            R(36,'SC,GO','Setor público','Regulação de IA','Público','0–6 meses',3,5,4,4,'Governança de IA para governos estaduais','Adequação de órgãos estaduais a legislações e políticas próprias de IA.','Projetos de leis estaduais avançam enquanto o marco nacional tramita.','Oferecer diagnóstico de maturidade de IA a secretarias.','Alesc','https://portalelegis.alesc.sc.gov.br'),
+            R(37,'PE','Tecnologia digital','Ecossistemas de inovação','Ambos','6–18 meses',3,4,3,3,'Parceria com o Porto Digital','Ofertas conjuntas de IA e transformação digital para o setor público nordestino.','Porto Digital abriga mais de 500 empresas de TI de alta densidade.','Propor parceria a empresas-chave do polo para frentes de GovTech.','Diario de PE','https://www.diariodepernambuco.com.br'),
+            R(38,'PB,RS','Sociedade','Envelhecimento','Público','18–36 meses',3,4,3,4,'Cuidado e economia prateada','Planos municipais de cuidado e de serviços públicos voltados à população idosa.','Inversão da pirâmide demográfica gera gargalos fiscais e de saúde em cidades do Sul e NE.','Desenhar oferta piloto para municípios selecionados.','Paraíba Business','https://paraibabusiness.com.br'),
+            R(39,'PR,SP,SC,MG,RS','Energia','Biometano','Ambos','6–18 meses',3,3,3,3,'Biometano municipal','Projetos de biometano a partir de resíduos agroindustriais, aterros e frotas públicas.','Plantas em rápida expansão substituindo combustíveis fósseis pesados.','Mapear cooperativas agrícolas e consórcios municipais.','Semil-SP','https://semil.sp.gov.br'),
+            R(40,'SP','Tecnologia digital','IA aplicada','Privado','6–18 meses',5,3,3,2,'IA em São Paulo por nicho','Entrar no mercado paulista de IA por nicho setorial hiperespecífico e parcerias, sem confronto direto.','Maior mercado digital do país exige proposta de valor verticalizada.','Escolher um nicho setorial e um parceiro distribuidor local.','Forbes Brasil','https://forbes.com.br'),
+            
+            // --- Projetos Aprovados Finep (Modelo Mandala) ---
+            R(42,'BR','Base Industrial de Defesa','Propulsão & Rastreamento','Público','6–18 meses',5,3,4,5,'Soberania em Defesa (Finep)','Estruturação técnica para vigilância naval, motor turbofan e rastreamento de alvos.','Alta injeção de subsídios federais na Rodada 2 da Finep para soberania tecnológica.','Mapear consórcios do setor de defesa.','Finep Mais Inovação','https://finep.gov.br'),
+            R(43,'SP,MG,DF,RJ','Base Industrial de Defesa','Criptografia Pós-Quântica','Público','18–36 meses',4,4,3,5,'Criptografia Pós-Quântica e Defesa (Finep)','Apoio a projetos de protocolos de rede segura, cibersegurança e proteção de infraestruturas críticas.','Órgãos como Anatel testam enlaces fotônicos e Finep fomenta soberania de dados frente à computação quântica.','Abordar centros de P&D estatais para estruturar captação.','Finep / Convergência Digital','https://finep.gov.br'),
+            R(44,'RS,SP,PR','Mobilidade Sustentável','Eletrificação & Drones','Ambos','6–18 meses',4,3,4,4,'Tráfego Aéreo de Drones e Barcos','PMO de Inovação para soluções de ferrovia digital, barcos elétricos e tráfego de drones.','Mobilidade descarbonizada recebe forte fomento nacional intermodal.','Propor consultoria para indústrias logísticas.','Finep Mais Inovação','https://finep.gov.br'),
+            R(45,'SC,RS,SP','Transição Energética','Baterias & Biometano','Ambos','0–6 meses',5,4,5,4,'Baterias de Fluxo e Biometano (Finep)','Modelagem de negócios para baterias estacionárias, ônibus a biometano e captura de CO2.','A transição energética é pilar mestre do programa Nova Indústria Brasil.','Mapear empresas aprovadas na Rodada 2.','Finep Mais Inovação','https://finep.gov.br'),
+            R(46,'GO,MT,PR','Cadeias Agroindustriais','Máquinas & Bioinsumos','Privado','0–6 meses',5,5,5,4,'Colheita Autônoma e Consórcios Bio','Diagnósticos e projetos de trator híbrido, milho editado, bioestimulantes e drones.','Agro digital e bioeconomia lideram volume de projetos no Centro-Oeste/Sul.','Oferecer go-to-market para agtechs financiadas.','Finep Mais Inovação','https://finep.gov.br'),
+            R(47,'SP,RJ,MG','Saúde e Biotech','Terapias & Vacinas','Privado','18–36 meses',4,2,3,4,'Terapias Avançadas e Saúde Baseada em IA','Gestão de conformidade para vacina de mRNA, próteses biônicas e IA clínica.','A Saúde atrai capital paciente e intenso de longo prazo do BNDES/Finep.','Monitorar parcerias para transferência tecnológica.','Finep Mais Inovação','https://finep.gov.br'),
+            R(48,'PE,CE,SP','Tecnologias Digitais','IA Soberana & LLMs','Ambos','0–6 meses',5,5,5,5,'IA Soberana e Agentes Industriais','Desenvolvimento de arquiteturas para LLMs generativos nacionais e orquestração de agentes.','A IA é o eixo transversal mais demandado; requer alta robustez de governança.','Estruturar fábrica de casos de uso de IA pública.','Finep Mais Inovação','https://finep.gov.br'),
+            R(49,'MG,PA,GO','Transformação Mineral','Reciclagem & Baixo Carbono','Privado','6–18 meses',4,4,4,4,'Minerais Críticos e Gêmeos Digitais','Planejamento para terras raras, reciclagem de íon-lítio e siderurgia verde (H2).','Verticalização compulsória da cadeia mineral para a transição energética global.','Abordar mineradoras com plano ESG estruturado.','Finep Mais Inovação','https://finep.gov.br'),
+            R(50,'BR','Economia Circular e Cidades','Reciclagem & Saneamento IA','Ambos','0–6 meses',4,4,4,3,'Cidades Inteligentes e Economia Circular','Mapeamento de funding para automação de água, telemetria e PVC reciclado.','Prefeituras buscando aumento agudo de eficiência hídrica e gestão de resíduos sustentável.','Estruturar PPPs municipais conectadas.','Finep Mais Inovação','https://finep.gov.br'),
+            R(51,'SP,RS','Semicondutores','Hardware para IA','Privado','18–36 meses',3,1,2,5,'Chip Nacional de IA (Semicondutores)','Consultoria estratégica para o projeto nacional de aceleradores de IA (único edital aberto).','Soberania em hardware tornou-se pauta geopolítica e de segurança federal.','Acompanhar andamento dos editais restritos abertos.','Finep Mais Inovação','https://finep.gov.br')
+        ];
+
+        const ATTR = {
+            1:['G','PM','DEC'],2:['ICS','MG','DI'],3:['G','MG','DIC'],4:['GICS','MG','ND'],5:['IC','PM','RI'],6:['G','PM','EF'],7:['GICS','MG','DN'],
+            8:['ICS','MG','F'],9:['ICS','MG','DNI'],10:['I','G','ND'],11:['G','G','E'],12:['C','G','N'],13:['G','PMG','EIF'],14:['GIS','MG','IC'],
+            15:['G','PM','NI'],16:['GIS','PG','EC'],17:['G','P','ED'],18:['GIC','PM','E'],19:['IS','PM','CE'],20:['GI','G','ND'],21:['GI','G','E'],
+            22:['I','MG','ED'],23:['G','PMG','EC'],24:['GIS','MG','EC'],25:['GI','PG','EN'],26:['IS','PM','F'],27:['GC','PMG','FE'],28:['I','MG','ED'],
+            29:['GICS','PM','ED'],30:['G','G','E'],31:['G','P','E'],32:['G','PM','E'],33:['G','P','E'],34:['IS','PM','DNC'],35:['G','G','EI'],
+            36:['G','G','NC'],37:['GI','MG','I'],38:['G','PM','E'],39:['GCI','PM','FE'],40:['I','MG','IR'],
+            42:['G','MG','EIF'], 43:['G','MG','DI'], 44:['GI','MG','EI'], 45:['GI','MG','EI'],
+            46:['IC','MG','RI'], 47:['IS','MG','DI'], 48:['GIC','MG','EIC'], 49:['I','G','ED'],
+            50:['GIC','PM','EI'], 51:['I','G','D']
+        };
+
+        const MANDALA_SECTORS = [
+            "Governo & Regulação", "Transição Energética", "Cadeias Agroindustriais",
+            "Saúde e Biotech", "Tecnologias Digitais", "Transformação Mineral",
+            "Economia Circular e Cidades", "Mobilidade Sustentável", "Base Industrial de Defesa", "Semicondutores"
+        ];
+
+        const SECTOR_MAP = {
+            'Setor público': 'Governo & Regulação',
+            'Infraestrutura': 'Economia Circular e Cidades',
+            'Empresas': 'Tecnologias Digitais',
+            'Tecnologia digital': 'Tecnologias Digitais',
+            'Agro & bioeconomia': 'Cadeias Agroindustriais',
+            'Indústria': 'Economia Circular e Cidades',
+            'Mineração': 'Transformação Mineral',
+            'Energia': 'Transição Energética',
+            'Sociedade': 'Saúde e Biotech'
+        };
+
+        // Attach attributes & calculate scores
+        RECS.forEach(r => {
+            if (SECTOR_MAP[r.setor]) r.setor = SECTOR_MAP[r.setor];
+            const a = ATTR[r.id];
+            r.cli = a[0].split('');
+            r.por = a[1].split('');
+            r.sol = a[2].split('');
+            r.nota = Math.round((r.T * PESOS.T + r.A * PESOS.A + r.P * PESOS.P + r.D * PESOS.D) / 5);
+            r.pi = FAIXAS.findIndex(f => r.nota >= f[0]);
+            r.pri = FAIXAS[r.pi][1];
+            r.priColor = FAIXAS[r.pi][2];
+            r.ufsLista = r.ufs.split(',');
+            r.nacional = r.ufs === 'BR';
+            
+            // Assign profiles based on ID and Sector
+            r.perfis = ['Consultoria']; // Default para maioria
+            if ([4, 5, 14, 37].includes(r.id) || r.setor === 'Tecnologias Digitais') {
+                if (!r.perfis.includes('Startup')) r.perfis.push('Startup');
+            }
+            if (r.id >= 42 && r.id <= 51) {
+                r.perfis.push('ICT', 'Corporacao');
+            }
+
+            // Layout angle around Mandala Sectors
+            const numSlices = MANDALA_SECTORS.length;
+            const sliceAngle = 360 / numSlices;
+            let sIdx = MANDALA_SECTORS.indexOf(r.setor);
+            if (sIdx === -1) sIdx = 4; // fallback para Digital
+
+            const baseAngle = sIdx * sliceAngle;
+            const spread = ((r.id * 17) % (sliceAngle - 10)) + 5; // spread inside the slice
+            r.angle = baseAngle + spread;
+            
+            // Radius: high note = close to center (0..100 -> 15..88)
+            r.radius = Math.max(12, Math.min(88, 100 - (r.nota * 0.85)));
+        });
+
+        // --- EDITAIS DATASET ---
+        const EDITAIS = [
+            {
+                id: "ED-01", orgao: "Sebrae/GO", titulo: "Credenciamento de Consultorias Sebraetec",
+                uf: "GO", estados: ["GO", "BR"],
+                orcamento: "Por demanda (Subsidio de ~70%)", prazo: "Inscrições Abertas (Contínuo)",
+                elegibilidade: "Consultorias de tecnologia, gestão e inovação",
+                cli: ["P","I","S","C"], por: ["P","M"], perfis: ["Consultoria"],
+                escopo: "A linha mais direta para atuar em GO. O cliente aciona, o Sebrae subsidia a maior parte do custo da consultoria.",
+                link: "https://sebrae.com.br", highlight: "Foco: Curto Prazo / PMEs"
+            },
+            {
+                id: "ED-02", orgao: "FINEP / MCTI", titulo: "Mais Inovação Brasil - Semicondutores",
+                uf: "BR", estados: ["BR","SP","RS","MG"],
+                orcamento: "R$ 100 Milhões", prazo: "Propostas até 25/11/2026",
+                elegibilidade: "Consórcios e empresas de tecnologia de base dura",
+                cli: ["I"], por: ["G"], perfis: ["ICT", "Corporacao"],
+                escopo: "Último edital aberto da Rodada 2. Apoio a projetos de hardware e aceleradores de IA. Recursos do FNDCT (não reembolsável).",
+                link: "http://www.finep.gov.br", highlight: "Alto Desafio Tecnológico"
+            },
+            {
+                id: "ED-03", orgao: "BNDES", titulo: "Estruturação de Projetos Públicos",
+                uf: "BR", estados: ["BR","GO","MT","MS","RS","PE","BA"],
+                orcamento: "Remuneração regulada em contrato", prazo: "Fluxo Contínuo",
+                elegibilidade: "Consultorias parceiras de entes municipais/estaduais",
+                cli: ["G"], por: ["M","G"], perfis: ["Consultoria"],
+                escopo: "Foco em saneamento, iluminação pública, mobilidade e saúde. Recomenda-se abordar diretamente os prefeitos para estruturar a captação.",
+                link: "https://www.bndes.gov.br", highlight: "Governo / Estruturação"
+            },
+            {
+                id: "ED-04", orgao: "Sebrae & Bossa Invest", titulo: "Inova Startups (6ª Edição)",
+                uf: "BR", estados: ["BR"],
+                orcamento: "Até R$ 800 mil (Possível Equity)", prazo: "Até 30/11/2026",
+                elegibilidade: "Startups e empresas com produto próprio",
+                cli: ["I","S"], por: ["P","M"], perfis: ["Startup"],
+                escopo: "Válido apenas se a consultoria possuir uma plataforma (SaaS) própria. O aporte pode virar participação societária.",
+                link: "https://sebrae.com.br", highlight: "Aporte Financeiro Direto"
+            }
+        ];
+
+        const EDITAIS_ENCERRADOS = [
+            { orgao: "FINEP", titulo: "Tecnologias Digitais (IA, GPU Clouds, Robótica)", prazo: "14/10/2026", orcamento: "Até R$ 300 mi (Mín. R$90mi N/NE/CO)", nota: "Exige rede corporativa: Proponente + 2 Co-executoras + 1 ICT. Uma empresa deve ter receita > R$ 16mi." },
+            { orgao: "FINEP", titulo: "Economia Circular e Cidades Sustentáveis", prazo: "31/08/2026", orcamento: "R$ 150 mi", nota: "Saneamento, segurança hídrica e smart cities. Prazos muito curtos: a TD deve montar consórcios agora para 2027." },
+            { orgao: "FINEP", titulo: "Subvenção Regional", prazo: "16/10/2026 (Resultados)", orcamento: "R$ 100 mi (CO)", nota: "Goiás aprovou 11 projetos. R$ 2 a 5 mi por projeto, com 5% de contrapartida." },
+            { orgao: "FAPEG / Secti", titulo: "Rede Goiana, Prêmio GO.IA e e-Goiás", prazo: "Encerrados", orcamento: "Variável (Até R$ 1 mi em alguns)", nota: "Fontes secundárias sugerem fluxo contínuo, mas oficialmente encerrados. Monitorar Secretaria de Ciência e Tecnologia." },
+            { orgao: "Min. Cidades", titulo: "Cidades + Inteligentes", prazo: "08/05/2026", orcamento: "Sem repasse", nota: "Assessoria técnica gratuita para municípios. Serve como porta de entrada relacional." }
+        ];
+
+        // --- APP STATE ---
+        const STATE = {
+            perfil: '',
+            uf: '',
+            sol: '',
+            setor: '',
+            seg: '',
+            hor: '',
+            cli: '',
+            por: '',
+            pri: null, // Cross-filter por prioridade clicada no gráfico
+            nac: true,
+            search: '',
+            selectedId: 1
+        };
+
+        // --- FILTER FUNCTION ---
+        function matchRec(r) {
+            if (STATE.perfil && !r.perfis.includes(STATE.perfil)) return false;
+            
+            if (STATE.uf) {
+                if (r.nacional) {
+                    if (!STATE.nac) return false;
+                } else if (!r.ufsLista.includes(STATE.uf)) {
+                    return false;
+                }
+            } else if (!STATE.nac && r.nacional) {
+                return false;
+            }
+
+            if (STATE.sol && !r.sol.includes(STATE.sol)) return false;
+            if (STATE.setor && r.setor !== STATE.setor) return false;
+            if (STATE.seg && r.seg !== STATE.seg) return false;
+            if (STATE.hor && r.hor !== STATE.hor) return false;
+            if (STATE.cli && !r.cli.includes(STATE.cli)) return false;
+            if (STATE.por && !r.por.includes(STATE.por)) return false;
+            
+            if (STATE.pri !== null) {
+                if (STATE.pri === 99) {
+                    if (r.pi < 2) return false;
+                } else if (r.pi !== STATE.pri) {
+                    return false;
+                }
+            }
+
+            if (STATE.search) {
+                const q = STATE.search.toLowerCase();
+                const text = `${r.titulo} ${r.oferta} ${r.porque} ${r.setor} ${r.seg} ${r.ufs}`.toLowerCase();
+                if (!text.includes(q)) return false;
+            }
+
+            return true;
+        }
+
+        function getFiltered() {
+            return RECS.filter(matchRec).sort((a,b) => a.pi - b.pi || b.nota - a.nota);
+        }
+
+        function updateChartFilterButton() {
+            const btn = document.getElementById('btn-clear-chart-filters');
+            const lbl = document.getElementById('active-chart-filter-label');
+            if (STATE.pri !== null) {
+                btn.classList.remove('hidden');
+                lbl.textContent = STATE.pri === 99 ? 'Monitorar/Outros' : FAIXAS[STATE.pri][1];
+            } else if (STATE.setor) {
+                btn.classList.remove('hidden');
+                lbl.textContent = STATE.setor;
+            } else if (STATE.cli) {
+                btn.classList.remove('hidden');
+                lbl.textContent = CLIENTES[STATE.cli];
+            } else {
+                btn.classList.add('hidden');
+                lbl.textContent = '';
+            }
+        }
+
+        function clearChartFilter() {
+            STATE.pri = null;
+            renderAll();
+        }
+        
+        function filterByPri(pri) {
+            STATE.pri = STATE.pri === pri ? null : pri;
+            renderAll();
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderLede(filtered) {
+            const el = document.getElementById('lede-text');
+            const total = filtered.length;
+            const aprof = filtered.filter(r => r.pi === 0).length;
+            const prep = filtered.filter(r => r.pi === 1).length;
+            const ufName = STATE.uf ? UF_NAMES[STATE.uf] : 'o Brasil';
+
+            if (total === 0) {
+                el.innerHTML = `Nenhuma oportunidade encontrada com a combinação atual de filtros. Tente redefinir os parâmetros acima.`;
+                return;
+            }
+
+            const top = filtered[0];
+            el.innerHTML = `Para <strong>${ufName}</strong>${STATE.setor ? ` no setor de <strong>${STATE.setor}</strong>` : ''}${STATE.cli ? ` voltado a <strong>${CLIENTES[STATE.cli]}</strong>` : ''}, identificamos <strong>${total} recomendações</strong> estratégicas (sendo <strong>${aprof} para aprofundar agora</strong> e <strong>${prep} para preparar</strong>). A maior oportunidade do portfólio filtrado é <strong>${top.titulo}</strong> com Score <strong>${top.nota}</strong>.`;
+        }
+
+        function updateKPIs(filtered) {
+            document.getElementById('kpi-total').textContent = filtered.length;
+            document.getElementById('kpi-aprof').textContent = filtered.filter(r => r.pi === 0).length;
+            document.getElementById('kpi-prep').textContent = filtered.filter(r => r.pi === 1).length;
+            document.getElementById('kpi-monit').textContent = filtered.filter(r => r.pi >= 2).length;
+
+            // Highlight selected KPI card
+            const cards = [
+                { id: 'kpi-card-total', active: STATE.pri === null, ring: 'ring-2 ring-gray-400 bg-gray-50' },
+                { id: 'kpi-card-0', active: STATE.pri === 0, ring: 'ring-2 ring-blue-500 bg-blue-50/50' },
+                { id: 'kpi-card-1', active: STATE.pri === 1, ring: 'ring-2 ring-emerald-500 bg-emerald-50/50' },
+                { id: 'kpi-card-99', active: STATE.pri === 99, ring: 'ring-2 ring-amber-500 bg-amber-50/50' }
+            ];
+
+            cards.forEach(c => {
+                const el = document.getElementById(c.id);
+                el.className = el.className.replace(/ring-2 ring-\w+-400 ring-\w+-500 bg-\w+-50\/?\d*/g, '').trim();
+                if (c.active && STATE.pri !== null) {
+                    if(c.id !== 'kpi-card-total') el.className += ` ${c.ring}`;
+                } else if (c.active && STATE.pri === null) {
+                    // Do nothing extra for total when nothing is selected, it's the default state
+                }
+            });
+        }
+
+        function populateSelects() {
+            // UF
+            const ufSelect = document.getElementById('filter-uf');
+            const currentUf = STATE.uf;
+            ufSelect.innerHTML = '<option value="">Todos os Estados</option>' + 
+                Object.entries(UF_NAMES).filter(([k]) => k !== 'BR').sort((a,b) => a[1].localeCompare(b[1])).map(([k,v]) => 
+                    `<option value="${k}" ${currentUf === k ? 'selected' : ''}>${v} (${k})</option>`
+                ).join('');
+
+            // Soluções
+            const solSelect = document.getElementById('filter-sol');
+            solSelect.innerHTML = '<option value="">Todas as Soluções</option>' + 
+                Object.entries(SOLUCOES).map(([k,v]) => 
+                    `<option value="${k}" ${STATE.sol === k ? 'selected' : ''}>${v}</option>`
+                ).join('');
+
+            // Setores
+            const setorSelect = document.getElementById('filter-setor');
+            const setores = [...new Set(RECS.map(r => r.setor))].sort();
+            setorSelect.innerHTML = '<option value="">Todos os Setores</option>' + 
+                setores.map(s => `<option value="${s}" ${STATE.setor === s ? 'selected' : ''}>${s}</option>`).join('');
+
+            // Segmentos
+            const segSelect = document.getElementById('filter-seg');
+            const segs = [...new Set(RECS.filter(r => !STATE.setor || r.setor === STATE.setor).map(r => r.seg))].sort();
+            segSelect.innerHTML = '<option value="">Todos os Segmentos</option>' + 
+                segs.map(s => `<option value="${s}" ${STATE.seg === s ? 'selected' : ''}>${s}</option>`).join('');
+
+            // Vigência (Horizonte)
+            const horSelect = document.getElementById('filter-hor');
+            const hors = [...new Set(RECS.map(r => r.hor))].sort();
+            horSelect.innerHTML = '<option value="">Qualquer Vigência</option>' + 
+                hors.map(h => `<option value="${h}" ${STATE.hor === h ? 'selected' : ''}>${h}</option>`).join('');
+        }
+
+        function renderMap() {
+            const container = document.getElementById('brazil-map-container');
+            const ufs = Object.keys(UF_NAMES).filter(k => k !== 'BR').sort();
+            
+            container.innerHTML = ufs.map(uf => {
+                // Cálculo de Densidade baseada ativamente nos filtros selecionados!
+                const count = RECS.filter(r => {
+                    if (r.nacional) return false; // Foco da bolha é territorial local
+                    if (!r.ufsLista.includes(uf)) return false;
+                    
+                    if (STATE.sol && !r.sol.includes(STATE.sol)) return false;
+                    if (STATE.setor && r.setor !== STATE.setor) return false;
+                    if (STATE.seg && r.seg !== STATE.seg) return false;
+                    if (STATE.hor && r.hor !== STATE.hor) return false;
+                    if (STATE.cli && !r.cli.includes(STATE.cli)) return false;
+                    if (STATE.por && !r.por.includes(STATE.por)) return false;
+                    if (STATE.pri !== null && r.pi !== STATE.pri) return false;
+                    
+                    return true;
+                }).length;
+
+                const isSelected = STATE.uf === uf;
+                const coords = MAP_COORDS[uf] || { top: 50, left: 50 };
+                
+                // Cálculo de Densidade: tamanho base + (contagem * fator de escala)
+                const size = count === 0 ? 12 : 20 + (count * 5);
+                const bgClass = count > 0 
+                    ? (isSelected ? 'bg-blue-700 ring-4 ring-blue-300' : 'bg-blue-600/85 hover:bg-blue-700')
+                    : (isSelected ? 'bg-gray-800 ring-4 ring-gray-300' : 'bg-gray-300/60 hover:bg-gray-400');
+                
+                const zIndex = count > 0 ? (isSelected ? 40 : 20 + count) : 10;
+                const opacity = count > 0 ? 1 : 0.5;
+
+                return `
+                    <button onclick="selectState('${uf}')" 
+                            class="absolute flex items-center justify-center rounded-full text-white font-bold transition-all shadow-md group ${bgClass}" 
+                            style="top: ${coords.top}%; left: ${coords.left}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%); z-index: ${zIndex}; opacity: ${opacity};">
+                        
+                        <span class="${count === 0 ? 'text-[0px]' : 'text-sm'}">${count > 0 ? count : ''}</span>
+                        
+                        <!-- Tooltip Hover -->
+                        <span class="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                            ${UF_NAMES[uf]}: ${count} oportunidade(s)
+                        </span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectState(uf) {
+            STATE.uf = STATE.uf === uf ? '' : uf;
+            document.getElementById('filter-uf').value = STATE.uf;
+            populateSelects();
+            renderAll();
+        }
+
+        function renderHeatTable() {
+            const table = document.getElementById('heat-setor-table');
+            const filtered = getFiltered();
+            const setores = [...new Set(RECS.map(r => r.setor))].sort();
+            const headers = ['Aprofundar', 'Preparar', 'Monitorar', 'Despriorizar'];
+            const colors = ['#0071E3', '#248A3D', '#D97706', '#8E8E93'];
+
+            let html = `<thead><tr><th>Setor</th>${headers.map((h,i) => `<th style="color:${colors[i]}">${h}</th>`).join('')}</tr></thead><tbody>`;
+
+            setores.forEach(setor => {
+                const rowItems = filtered.filter(r => r.setor === setor);
+                const isCurrent = STATE.setor === setor;
+                html += `<tr>
+                    <td>
+                        <button onclick="filterBySetor('${setor}')" class="text-xs font-semibold ${isCurrent ? 'text-blue-600 underline' : 'text-gray-800 hover:text-blue-600'}">
+                            ${setor}
+                        </button>
+                    </td>`;
+                
+                [0, 1, 2, 3].forEach(pi => {
+                    const count = rowItems.filter(r => r.pi === pi).length;
+                    const style = count > 0 
+                        ? `background-color: color-mix(in srgb, ${colors[pi]} ${Math.min(45, 12 + count * 10)}%, transparent); font-weight:700; color:#1D1D1F;` 
+                        : 'color:#98989D;';
+                    html += `<td><span class="inline-block px-2 py-0.5 rounded-md" style="${style}">${count || '·'}</span></td>`;
+                });
+
+                html += `</tr>`;
+            });
+
+            html += `</tbody>`;
+            table.innerHTML = html;
+        }
+
+        function filterBySetor(s) {
+            STATE.setor = STATE.setor === s ? '' : s;
+            document.getElementById('filter-setor').value = STATE.setor;
+            populateSelects();
+            renderAll();
+        }
+
+        // --- OPPORTUNITY DETAILS INSPECTOR ---
+        function selectOpportunity(id, autoOpen = true) {
+            const item = RECS.find(r => r.id === id);
+            if (!item) return;
+
+            STATE.selectedId = item.id;
+            
+            document.getElementById('det-uf').textContent = item.ufs;
+            document.getElementById('det-setor').textContent = item.setor;
+            document.getElementById('det-horizonte').textContent = item.hor;
+            document.getElementById('det-perfil').textContent = item.perfis.join(', ');
+            document.getElementById('det-titulo').textContent = item.titulo;
+            document.getElementById('det-score-val').textContent = item.nota;
+            document.getElementById('det-score-box').style.backgroundColor = item.priColor;
+
+            document.getElementById('det-oferta').textContent = item.oferta;
+            document.getElementById('det-porque').textContent = item.porque;
+            document.getElementById('det-passo').textContent = item.passo;
+
+            document.getElementById('det-crit-t').textContent = `${item.T} / 5`;
+            document.getElementById('det-crit-a').textContent = `${item.A} / 5`;
+            document.getElementById('det-crit-p').textContent = `${item.P} / 5`;
+            document.getElementById('det-crit-d').textContent = `${item.D} / 5`;
+
+            document.getElementById('det-fonte').textContent = item.fonte;
+            document.getElementById('det-link').href = item.url;
+            
+            drawRadar();
+            if (autoOpen) openDrawer();
+        }
+
+        function openDrawer() {
+            const backdrop = document.getElementById('slide-backdrop');
+            const panel = document.getElementById('slide-panel');
+            backdrop.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-x-full');
+            });
+        }
+
+        function closeDrawer() {
+            const backdrop = document.getElementById('slide-backdrop');
+            const panel = document.getElementById('slide-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- RENDER FULL PLAN CARDS ---
+        function renderPlano(filtered) {
+            const container = document.getElementById('plano-container');
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="apple-card p-10 text-center text-gray-500 font-semibold">Nenhuma oportunidade atende aos filtros selecionados.</div>`;
+                return;
+            }
+
+            let html = '';
+            FAIXAS.forEach(([minNota, nomeFaixa, corFaixa], pi) => {
+                const group = filtered.filter(r => r.pi === pi);
+                if (group.length === 0) return;
+
+                html += `
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-2 pt-2">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${corFaixa};"></span>
+                            <h4 class="text-base font-bold text-gray-900">${nomeFaixa}</h4>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">${group.length}</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                `;
+
+                group.forEach(r => {
+                    const isSelected = r.id === STATE.selectedId;
+                    html += `
+                        <article onclick="selectOpportunity(${r.id})" class="apple-card p-6 cursor-pointer border transition-all ${isSelected ? 'ring-2 ring-blue-600 border-blue-600 bg-blue-50/20' : 'hover:border-gray-300'}">
+                            <div class="flex items-start justify-between gap-4 mb-3">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                                        <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">${r.ufs}</span>
+                                        <span class="text-xs text-gray-500 font-bold">${r.setor} · ${r.seg}</span>
+                                        <span class="text-[10px] uppercase font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">${r.perfis.join(', ')}</span>
+                                    </div>
+                                    <h5 class="text-lg font-extrabold text-gray-900 leading-snug">${r.titulo}</h5>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-xl text-white font-extrabold text-sm shadow-sm" style="background-color: ${corFaixa};">
+                                    ${r.nota}
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-gray-700 font-medium line-clamp-2 mb-4 leading-relaxed">${r.oferta}</p>
+
+                            <div class="flex flex-wrap gap-2 text-xs text-gray-600 font-bold mb-4">
+                                <span class="bg-slate-100 px-2.5 py-1 rounded-lg">Clientes: ${r.cli.map(c => CLIENTES[c]).join(', ')}</span>
+                                <span class="bg-slate-100 px-2.5 py-1 rounded-lg">Porte: ${r.por.map(p => PORTES[p]).join(', ')}</span>
+                            </div>
+
+                            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                                <span class="text-blue-600 font-bold hover:underline">Ver Detalhes Estratégicos →</span>
+                                <span class="text-gray-500 font-bold bg-gray-50 px-2.5 py-1 rounded-md">${r.hor}</span>
+                            </div>
+                        </article>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // --- RENDER EDITAIS ---
+        function renderEditais() {
+            const container = document.getElementById('editais-container');
+            const encContainer = document.getElementById('editais-encerrados-container');
+            
+            const stateFilter = STATE.uf;
+            const cliFilter = STATE.cli;
+            const porFilter = STATE.por;
+
+            const filtered = EDITAIS.filter(ed => {
+                const matchUf = !stateFilter || ed.uf === 'BR' || ed.estados.includes(stateFilter);
+                const matchPerfil = !STATE.perfil || (ed.perfis && ed.perfis.includes(STATE.perfil));
+                return matchUf && matchPerfil;
+            });
+
+            document.getElementById('editais-badge-count').textContent = `${filtered.length} chamadas abertas/contínuas`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full apple-card p-6 text-center text-xs text-gray-500 font-medium">
+                        Nenhum edital ativo coincide com os filtros atuais.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = filtered.map(ed => `
+                    <div class="apple-card p-5 flex flex-col justify-between border border-gray-200/80 hover:border-emerald-300 transition-colors">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">${ed.orgao}</span>
+                                <span class="text-[10px] font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">${ed.uf === 'BR' ? 'Nacional' : ed.uf}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-gray-900 leading-snug mb-2">${ed.titulo}</h4>
+                            <div class="text-xs space-y-1 mb-3 text-gray-600 bg-gray-50 p-2 rounded-lg">
+                                <div class="flex justify-between"><span class="text-gray-500">Valor/Benefício:</span><strong class="text-gray-900">${ed.orcamento}</strong></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Prazo:</span><strong class="text-emerald-700">${ed.prazo}</strong></div>
+                            </div>
+                            <div class="mb-3">
+                                <p class="text-xs text-gray-700 leading-relaxed"><strong class="text-gray-900">Como a TD atua:</strong> ${ed.escopo}</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">${ed.highlight}</span>
+                            <a href="${ed.link}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">Site Oficial ↗</a>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render Encerrados
+            encContainer.innerHTML = EDITAIS_ENCERRADOS.map(ed => `
+                <div class="apple-card p-4 bg-slate-50 border border-gray-200 opacity-90 hover:opacity-100 transition-opacity">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-0.5 rounded">${ed.orgao}</span>
+                        <span class="text-[10px] font-bold text-amber-700">${ed.prazo}</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-800 mb-1">${ed.titulo}</h4>
+                    <p class="text-[11px] text-gray-600 mb-2"><strong>Orçamento Histórico:</strong> ${ed.orcamento}</p>
+                    <p class="text-[11px] text-gray-600 italic bg-white p-2 rounded border border-gray-100"><strong class="text-gray-800 not-italic">Insight p/ Próxima Rodada:</strong> ${ed.nota}</p>
+                </div>
+            `).join('');
+        }
+
+        // --- RADAR CANVAS ENGINE ---
+        function drawRadar() {
+            const container = document.getElementById('radar-container');
+            if (!container) return;
+            
+            let html = '<div class="absolute inset-0 z-0">';
+            
+            // --- 1. Draw SVG Interactive Slices (Mandala Style) ---
+            html += `<svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90 drop-shadow-sm overflow-visible">`;
+            
+            const numSlices = MANDALA_SECTORS.length;
+            const sliceAngle = 360 / numSlices;
+            
+            // Premium Colors for the 10 sectors
+            const SECTOR_COLORS = [
+                '#E0F2FE', // Governo - Sky
+                '#FEF08A', // Energia - Yellow
+                '#DCFCE7', // Agro - Green
+                '#FCE7F3', // Saude - Pink
+                '#EDE9FE', // Digital - Purple
+                '#FFEDD5', // Mineral - Orange
+                '#CCFBF1', // Circular/Cidades - Teal
+                '#E0E7FF', // Mobilidade - Indigo
+                '#FEE2E2', // Defesa - Red
+                '#F3F4F6'  // Semicondutores - Gray
+            ];
+
+            for (let i = 0; i < numSlices; i++) {
+                const startAngle = i * sliceAngle;
+                const endAngle = (i + 1) * sliceAngle;
+                
+                const startRad = startAngle * (Math.PI / 180);
+                const endRad = endAngle * (Math.PI / 180);
+                
+                // Radius is 48 to leave a tiny bit of edge breathing room
+                const radius = 48;
+                const x1 = 50 + radius * Math.cos(startRad);
+                const y1 = 50 + radius * Math.sin(startRad);
+                const x2 = 50 + radius * Math.cos(endRad);
+                const y2 = 50 + radius * Math.sin(endRad);
+                
+                const sectorName = MANDALA_SECTORS[i];
+                const isSelected = STATE.setor === sectorName;
+                const opacity = (STATE.setor && !isSelected) ? '0.2' : (isSelected ? '0.95' : '0.6');
+                const strokeColor = isSelected ? '#1D1D1F' : '#ffffff';
+                const strokeWidth = isSelected ? '0.6' : '0.4';
+                
+                html += `
+                    <path d="M 50 50 L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z" 
+                          fill="${SECTOR_COLORS[i]}" stroke="${strokeColor}" stroke-width="${strokeWidth}" opacity="${opacity}"
+                          class="cursor-pointer transition-all duration-300 hover:opacity-100 origin-center"
+                          onclick="filterBySetor('${sectorName}')">
+                        <title>${sectorName} (Clique para filtrar)</title>
+                    </path>
+                `;
+            }
+
+            // Draw Inner Hub and Reference Rings indicating Urgency Zones
+            html += `<circle cx="50" cy="50" r="10" fill="#ffffff" stroke="#CBD5E1" stroke-width="0.5"/>`; // Center Hub
+            html += `<circle cx="50" cy="50" r="20" fill="none" stroke="#93C5FD" stroke-width="0.3" stroke-dasharray="1.5 1.5"/>`; // Aprofundar Boundary
+            html += `<circle cx="50" cy="50" r="30" fill="none" stroke="#6EE7B7" stroke-width="0.3" stroke-dasharray="1.5 1.5"/>`; // Preparar Boundary
+            
+            html += `</svg></div>`;
+
+            // --- 2. Draw Sector Labels ---
+            for (let i = 0; i < numSlices; i++) {
+                const angle = i * sliceAngle;
+                // SVG is rotated -90deg, so we offset the visual angle by -90
+                const visualAngle = angle - 90;
+                const textAngle = visualAngle + (sliceAngle / 2);
+                const textAngleRad = textAngle * (Math.PI / 180);
+                
+                const tx = 50 + 38 * Math.cos(textAngleRad); // Place label at radius 38%
+                const ty = 50 + 38 * Math.sin(textAngleRad);
+                
+                let rot = textAngle;
+                if (textAngle > 90 || textAngle < -90) rot += 180;
+                
+                const sectorName = MANDALA_SECTORS[i];
+                const isSelected = STATE.setor === sectorName;
+                const weightClass = isSelected ? 'font-black text-gray-900 scale-110' : 'font-extrabold text-gray-500/80 hover:text-gray-900';
+
+                html += `
+                    <button onclick="filterBySetor('${sectorName}')" 
+                        class="absolute flex items-center justify-center text-[clamp(7px,1.8vw,9.5px)] sm:text-[9.5px] ${weightClass} uppercase tracking-widest w-24 text-center leading-tight origin-center cursor-pointer transition-all z-10" 
+                        style="top: ${ty}%; left: ${tx}%; transform: translate(-50%, -50%) rotate(${rot}deg); text-shadow: 0 0 6px rgba(255,255,255,0.9), 0 0 3px rgba(255,255,255,1);">
+                        ${sectorName}
+                    </button>
+                `;
+            }
+
+            // --- 3. Draw Nodes (Opportunities) ---
+            const filtered = getFiltered();
+            filtered.forEach(r => {
+                const visualAngle = r.angle - 90;
+                const angleRad = visualAngle * (Math.PI / 180);
+                
+                // Map score mathematically to the precise rings drawn in SVG:
+                // Hub ends at 10. Aprofundar ring at 20. Preparar ring at 30. Outer at 45.
+                let dist;
+                if (r.nota >= 78) {
+                    // Score 78-100 maps to distance 20-10
+                    dist = 20 - ((r.nota - 78) / 22) * 8; 
+                } else if (r.nota >= 65) {
+                    // Score 65-77 maps to distance 30-21
+                    dist = 30 - ((r.nota - 65) / 12) * 9;
+                } else {
+                    // Score 0-64 maps to distance 44-31
+                    dist = 44 - ((r.nota) / 64) * 13;
+                }
+                
+                const x = 50 + dist * Math.cos(angleRad);
+                const y = 50 + dist * Math.sin(angleRad);
+                
+                const isSelected = r.id === STATE.selectedId;
+                const pulseHtml = (r.pi === 0 && !isSelected) ? `<span class="absolute inline-flex h-full w-full rounded-full opacity-50 animate-ping" style="background-color: ${r.priColor};"></span>` : '';
+                const selectedHtml = isSelected ? `<span class="absolute -inset-2 rounded-full border-2 border-dashed animate-[spin_4s_linear_infinite]" style="border-color: ${r.priColor};"></span>` : '';
+                
+                html += `
+                    <button onclick="selectOpportunity(${r.id})" 
+                        class="absolute flex items-center justify-center rounded-full text-white font-bold transition-all shadow-md group hover:scale-125 hover:z-40 ${isSelected ? 'scale-110 z-30 ring-4 ring-white' : 'z-20'}" 
+                        style="top: ${y}%; left: ${x}%; width: 18px; height: 18px; transform: translate(-50%, -50%); background-color: ${r.priColor};">
+                        ${pulseHtml}
+                        ${selectedHtml}
+                        <span class="text-[9px] relative z-10">${r.id}</span>
+                        
+                        <!-- Tooltip -->
+                        <span class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-52 bg-gray-900 text-white text-[11px] font-normal text-left p-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                            <strong class="block mb-1 text-xs" style="color: ${r.priColor};">Score: ${r.nota}</strong>
+                            ${r.titulo}
+                            <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>
+                        </span>
+                    </button>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // --- CHART.JS VISUALIZATIONS ---
+        let chartInstances = {};
+        let chartDataLabelsRegistered = false;
+
+        function initCharts() {
+            if (typeof Chart === 'undefined') {
+                setTimeout(initCharts, 200);
+                return;
+            }
+
+            // Register datalabels plugin if available (Apenas uma vez)
+            if (typeof ChartDataLabels !== 'undefined' && !chartDataLabelsRegistered) {
+                Chart.register(ChartDataLabels);
+                chartDataLabelsRegistered = true;
+            }
+
+            updateChartFilterButton();
+            const filtered = getFiltered();
+
+            // Chart 1: Priority Distribution
+            const pCounts = [
+                filtered.filter(r => r.pi === 0).length,
+                filtered.filter(r => r.pi === 1).length,
+                filtered.filter(r => r.pi === 2).length,
+                filtered.filter(r => r.pi === 3).length
+            ];
+
+            const ctxP = document.getElementById('chartPriority').getContext('2d');
+            if (chartInstances.priority) chartInstances.priority.destroy();
+            chartInstances.priority = new Chart(ctxP, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprofundar Agora', 'Preparar', 'Monitorar', 'Despriorizar'],
+                    datasets: [{
+                        data: pCounts,
+                        backgroundColor: ['#0071E3', '#248A3D', '#D97706', '#8E8E93'],
+                        borderWidth: STATE.pri !== null ? 3 : 2,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIndex = elements[0].index;
+                            STATE.pri = STATE.pri === clickedIndex ? null : clickedIndex;
+                            renderAll();
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12, weight: 'bold', family: '"Helvetica Neue", Helvetica, sans-serif' }, color: '#1D1D1F' } },
+                        datalabels: {
+                            color: '#FFFFFF',
+                            font: { weight: 'bold', size: 14, family: '"Helvetica Neue", Helvetica, sans-serif' },
+                            formatter: (value) => value > 0 ? value : '',
+                            anchor: 'center',
+                            align: 'center'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.label}: ${ctx.raw} recomendação(ões) (clique para filtrar)`
+                            }
+                        }
+                    },
+                    cutout: '62%'
+                }
+            });
+
+            // Chart 2: Top Sectors Average Score
+            const setores = [...new Set(filtered.map(r => r.setor))];
+            const avgScores = setores.map(s => {
+                const items = filtered.filter(r => r.setor === s);
+                return Math.round(items.reduce((acc, c) => acc + c.nota, 0) / items.length);
+            });
+
+            const ctxS = document.getElementById('chartSectors').getContext('2d');
+            if (chartInstances.sectors) chartInstances.sectors.destroy();
+            chartInstances.sectors = new Chart(ctxS, {
+                type: 'bar',
+                data: {
+                    labels: setores.map(s => s.length > 13 ? s.substring(0, 13) + '…' : s),
+                    datasets: [{
+                        label: 'Score Médio',
+                        data: avgScores,
+                        backgroundColor: setores.map(s => s === STATE.setor ? '#1D1D1F' : '#0071E3'),
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#005BB5'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIdx = elements[0].index;
+                            const clickedSetor = setores[clickedIdx];
+                            filterBySetor(clickedSetor);
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#1D1D1F',
+                            font: { size: 12, weight: 'bold', family: '"Helvetica Neue", Helvetica, sans-serif' },
+                            formatter: (v) => v > 0 ? v : ''
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: (ctx) => setores[ctx[0].dataIndex],
+                                label: (ctx) => ` Score Médio: ${ctx.raw} / 100 (clique para filtrar)`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { min: 0, max: 100, ticks: { font: { size: 11, family: '"Helvetica Neue", Helvetica, sans-serif' }, color: '#6E6E73' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { ticks: { font: { size: 11, weight: 'bold', family: '"Helvetica Neue", Helvetica, sans-serif' }, color: '#1D1D1F' }, grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 3: Clients Count
+            const clientCodes = ['G', 'I', 'C', 'S'];
+            const clientCounts = clientCodes.map(c => filtered.filter(r => r.cli.includes(c)).length);
+
+            const ctxC = document.getElementById('chartClients').getContext('2d');
+            if (chartInstances.clients) chartInstances.clients.destroy();
+            chartInstances.clients = new Chart(ctxC, {
+                type: 'bar',
+                data: {
+                    labels: ['Governo', 'Indústria', 'Cooperativa', 'Sistema S'],
+                    datasets: [{
+                        label: 'Oportunidades',
+                        data: clientCounts,
+                        backgroundColor: clientCodes.map(c => c === STATE.cli ? '#1D1D1F' : '#248A3D'),
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#1B6B2F'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIdx = elements[0].index;
+                            const clickedCli = clientCodes[clickedIdx];
+                            STATE.cli = STATE.cli === clickedCli ? '' : clickedCli;
+                            // Sincroniza o controle segmentado de clientes
+                            document.querySelectorAll('#seg-cli button').forEach(b => {
+                                b.classList.toggle('active', b.dataset.v === STATE.cli);
+                            });
+                            renderAll();
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#1D1D1F',
+                            font: { size: 12, weight: 'bold', family: '"Helvetica Neue", Helvetica, sans-serif' },
+                            formatter: (v) => v > 0 ? v : ''
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.raw} oportunidade(s) (clique para filtrar)`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { size: 11, family: '"Helvetica Neue", Helvetica, sans-serif' }, stepSize: 2, color: '#6E6E73' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { ticks: { font: { size: 11, weight: 'bold', family: '"Helvetica Neue", Helvetica, sans-serif' }, color: '#1D1D1F' }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- CLIPBOARD EXPORT ---
+        function copiarPlanoTexto() {
+            const filtered = getFiltered();
+            const ufNome = STATE.uf ? UF_NAMES[STATE.uf] : 'Brasil';
+            let txt = `RADAR ESTRATÉGICO DE PROJETOS E EDITAIS · EDIÇÃO 01\nFiltro Atual: ${ufNome} | Total: ${filtered.length} recomendações\n\n`;
+
+            FAIXAS.forEach(([min, nome], pi) => {
+                const group = filtered.filter(r => r.pi === pi);
+                if (!group.length) return;
+                txt += `=== ${nome.toUpperCase()} (${group.length}) ===\n`;
+                group.forEach(r => {
+                    txt += `• [Nota ${r.nota}] ${r.titulo} (${r.ufs})\n`;
+                    txt += `  Oferta: ${r.oferta}\n`;
+                    txt += `  Próximo Passo: ${r.passo}\n`;
+                    txt += `  Fonte: ${r.fonte} (${r.url})\n\n`;
+                });
+            });
+
+            const toast = document.getElementById('toast');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt).then(() => {
+                    showToast();
+                }).catch(() => fallbackCopy(txt));
+            } else {
+                fallbackCopy(txt);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {}
+            document.body.removeChild(ta);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+
+        // --- MASTER RENDER DISPATCHER ---
+        function renderAll() {
+            const filtered = getFiltered();
+            renderLede(filtered);
+            updateKPIs(filtered);
+            renderMap();
+            renderHeatTable();
+            renderPlano(filtered);
+            renderEditais();
+            drawRadar();
+            initCharts();
+
+            // Ensure valid selected item
+            if (!filtered.some(r => r.id === STATE.selectedId) && filtered.length > 0) {
+                selectOpportunity(filtered[0].id);
+            }
+        }
+
+        // --- EVENT BINDINGS ---
+        function bindEvents() {
+            document.getElementById('filter-perfil').addEventListener('change', e => {
+                STATE.perfil = e.target.value;
+                renderAll();
+            });
+
+            document.getElementById('filter-uf').addEventListener('change', e => {
+                STATE.uf = e.target.value;
+                renderAll();
+            });
+
+            document.getElementById('filter-sol').addEventListener('change', e => {
+                STATE.sol = e.target.value;
+                renderAll();
+            });
+
+            document.getElementById('filter-setor').addEventListener('change', e => {
+                STATE.setor = e.target.value;
+                populateSelects();
+                renderAll();
+            });
+
+            document.getElementById('filter-seg').addEventListener('change', e => {
+                STATE.seg = e.target.value;
+                renderAll();
+            });
+
+            document.getElementById('filter-hor').addEventListener('change', e => {
+                STATE.hor = e.target.value;
+                renderAll();
+            });
+
+            document.getElementById('search-input').addEventListener('input', e => {
+                STATE.search = e.target.value;
+                renderAll();
+            });
+
+            // Segmented controls
+            const setupSeg = (containerId, stateKey, isBool = false) => {
+                const container = document.getElementById(containerId);
+                container.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        STATE[stateKey] = isBool ? (btn.dataset.v === '1') : btn.dataset.v;
+                        renderAll();
+                    });
+                });
+            };
+
+            setupSeg('seg-cli', 'cli');
+            setupSeg('seg-por', 'por');
+            setupSeg('seg-nac', 'nac', true);
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                STATE.perfil = '';
+                STATE.uf = '';
+                STATE.sol = '';
+                STATE.setor = '';
+                STATE.seg = '';
+                STATE.hor = '';
+                STATE.cli = '';
+                STATE.por = '';
+                STATE.pri = null;
+                STATE.nac = true;
+                STATE.search = '';
+                
+                document.getElementById('filter-perfil').value = '';
+                document.getElementById('search-input').value = '';
+
+                document.querySelectorAll('.seg-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.v === '' || b.dataset.v === '1');
+                });
+
+                populateSelects();
+                renderAll();
+            });
+        }
+
+        // --- INIT ON LOAD ---
+        window.onload = function() {
+            populateSelects();
+            bindEvents();
+            renderAll();
+            
+            const filtered = getFiltered();
+            if (filtered.length > 0) {
+                selectOpportunity(filtered[0].id, false);
+            }
+        };
+    </script>
+</body>
+</html>
